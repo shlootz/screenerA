@@ -1,6 +1,7 @@
 import ccxt
 import pandas as pd
 import streamlit as st
+import altair as alt
 
 def get_available_pairs():
     exchange = ccxt.binance()
@@ -68,13 +69,33 @@ for symbol in symbols:
     except Exception as e:
         st.error(f"Error fetching data for {symbol}: {str(e)}")
 
+# Categorize the projects
+def categorize_project(row):
+    if row["Short Term"] == "Bearish" and row["Mid Term"] == "Bearish" and row["Long Term"] == "Bearish":
+        return "Completely Bearish"
+    elif row["Short Term"] == "Bullish" and row["Mid Term"] == "Bullish" and row["Long Term"] == "Bullish":
+        return "Completely Bullish"
+    else:
+        return "Gradually Bullish"
+
+summary_df = pd.DataFrame(summary_data)
+summary_df['Category'] = summary_df.apply(categorize_project, axis=1)
+
 # Display summary table
 st.write("Sentiment Summary")
-summary_df = pd.DataFrame(summary_data)
-
-# Apply color coding to the sentiment columns
 styled_summary_df = summary_df.style.applymap(color_sentiment, subset=['Short Term', 'Mid Term', 'Long Term'])
 st.dataframe(styled_summary_df)
+
+# Visualization
+st.write("Sentiment Visualization")
+chart = alt.Chart(summary_df).mark_circle(size=60).encode(
+    x='Symbol',
+    y='Category',
+    color='Category',
+    tooltip=['Symbol', 'Short Term', 'Mid Term', 'Long Term']
+).interactive()
+
+st.altair_chart(chart, use_container_width=True)
 
 # Detailed view
 selected_symbol = st.selectbox("Select Symbol for Details", [row["Symbol"] for row in summary_data])

@@ -64,7 +64,6 @@ for symbol in symbols:
             "Short Term": short_term,
             "Mid Term": mid_term,
             "Long Term": long_term,
-            "Data": data
         })
     except Exception as e:
         st.error(f"Error fetching data for {symbol}: {str(e)}")
@@ -79,17 +78,19 @@ st.dataframe(styled_summary_df)
 
 # Detailed view
 selected_symbol = st.selectbox("Select Symbol for Details", [row["Symbol"] for row in summary_data])
-selected_data = next((row["Data"] for row in summary_data if row["Symbol"] == selected_symbol), None)
+selected_data = None
+for row in summary_data:
+    if row["Symbol"] == selected_symbol:
+        selected_data = row
+        break
 
 if selected_data is not None:
-    st.write(f"Pivot Points for {selected_symbol} ({timeframe})")
-    st.dataframe(selected_data)
-
-    short_term = "Bullish" if selected_data['ShortTerm'].iloc[-1] else "Bearish"
-    mid_term = "Bullish" if selected_data['MidTerm'].iloc[-1] else "Bearish"
-    long_term = "Bullish" if selected_data['LongTerm'].iloc[-1] else "Bearish"
-
-    st.write("Sentiment Summary for Selected Symbol")
-    st.write(f"Short Term: {short_term}")
-    st.write(f"Mid Term: {mid_term}")
-    st.write(f"Long Term: {long_term}")
+    st.write(f"Sentiment Summary for {selected_symbol}")
+    st.write(f"Short Term: {selected_data['Short Term']}")
+    st.write(f"Mid Term: {selected_data['Mid Term']}")
+    st.write(f"Long Term: {selected_data['Long Term']}")
+    # Retrieve the detailed data for the selected symbol
+    detailed_data = get_data(selected_symbol, timeframe, limit)
+    detailed_data = calculate_pivot_points(detailed_data)
+    detailed_data = determine_sentiment(detailed_data)
+    st.dataframe(detailed_data)
